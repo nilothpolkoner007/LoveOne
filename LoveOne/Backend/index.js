@@ -24,6 +24,9 @@ app.use(cors());
 app.use(express.json());
 
 // Routes
+app.get('/', (req, res) => {
+  res.send('Hello World!');
+})
 app.use('/user', userRouter);
 app.use('/api/couple-profile', milestoneRouter);
 app.use('/chat', chatRoutes);
