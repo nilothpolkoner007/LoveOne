@@ -69,12 +69,12 @@ function HomePage() {
       {/* Testimonials */}
       <section>
         <h2 className="text-3xl font-bold text-center text-gray-800 mb-12">
-          Love Stories from Our Couples
+          Love Stories from Our Couples   Make by Nilothpol Koner
         </h2>
         <div className="grid md:grid-cols-3 gap-8">
           <TestimonialCard
-            image="https://images.unsplash.com/photo-1517841905240-472988babdf9?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80"
-            name="Sarah & Mike"
+            image="https://media.licdn.com/dms/image/v2/D4D35AQE1kIMoYaY_Wg/profile-framedphoto-shrink_400_400/profile-framedphoto-shrink_400_400/0/1723440100468?e=1746975600&v=beta&t=4tg1gCWqQqJifWBJXpXM9fONX2Nwe-BCtj5Nnlh7VRw&auto=format&fit=crop&w=200&q=80"
+            name="Nilothpol Koner"
             text="This app has brought us even closer. We love sending surprise gifts!"
           />
           <TestimonialCard
