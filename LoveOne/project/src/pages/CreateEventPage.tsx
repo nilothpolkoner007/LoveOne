@@ -49,19 +49,29 @@ const CreateEventsPage = () => {
 
   const fetchEventPlaces = async () => {
     try {
-      const res = await axios.get(`{import.meta.env.VITE_Backend_url}/eventplaces`);
-      setEventPlaces(res.data);
+      const res = await axios.get(`${import.meta.env.VITE_Backend_url}/api/eventplaces`);
+
+      // Make sure it's an array
+      const places = Array.isArray(res.data) ? res.data : res.data.places || [];
+
+      setEventPlaces(places);
     } catch (err) {
       console.error('Failed to fetch places:', err);
+      setEventPlaces([]); // fallback
     }
   };
 
   const fetchEvents = async () => {
     try {
-      const res = await axios.get(`{import.meta.env.VITE_Backend_url}/events/${coupleId}`);
-      setEvents(res.data);
+      const res = await axios.get(`${import.meta.env.VITE_Backend_url}/api/events/${coupleId}`);
+
+      // Handle both array and object with "events" key
+      const eventList = Array.isArray(res.data) ? res.data : res.data.events || [];
+
+      setEvents(eventList);
     } catch (err) {
       console.error('Failed to fetch events:', err);
+      setEvents([]); // Fallback to empty array on error
     }
   };
 
@@ -70,7 +80,7 @@ const CreateEventsPage = () => {
     if (!title || !date || !type || !location) return;
 
     try {
-      await axios.post('http://localhost:500/api/events', {
+      await axios.post((`${import.meta.env.VITE_Backend_url}/api/events`), {
         title,
         date,
         type,

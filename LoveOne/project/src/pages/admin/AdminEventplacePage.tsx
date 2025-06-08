@@ -11,10 +11,8 @@ interface EventplaceForm {
   state: string;
   location: string;
   goodfor: string;
+  Location: string;
   type: string;
-  phone: string;
-  email: string;
-  website: string;
   description: string;
   images: string[];
   ratting: number;
@@ -27,11 +25,9 @@ const AdminEventplacePage = () => {
     city: '',
     state: '',
     location: '',
-    goodfor: '',
     type: '',
-    phone: '',
-    email: '',
-    website: '',
+    goodfor: '',
+    Location: '',
     description: '',
     images: [],
     ratting: 0,
@@ -95,11 +91,9 @@ const AdminEventplacePage = () => {
       city: '',
       state: '',
       location: '',
-      goodfor: '',
       type: '',
-      phone: '',
-      email: '',
-      website: '',
+      goodfor: '',
+      Location: '',
       description: '',
       images: [],
       ratting: 0,

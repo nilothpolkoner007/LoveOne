@@ -19,7 +19,7 @@ export default function EventsPage() {
   const handleSelectPlace = async (id) => {
     setLoading(true);
     try {
-      const res = await axios.get(`${import.meta.env.VITE_Backend_url}/api/eventplaces/${id}`);
+      const res = await axios.get(`${import.meta.env.VITE_Backend_url}/api/events/${id}`);
       setSelectedPlace(res.data);
     } catch (err) {
       console.error('Error fetching place detail:', err);
@@ -38,7 +38,7 @@ export default function EventsPage() {
       <div className='flex justify-between items-center mb-6'>
         <h1 className='text-2xl font-semibold text-gray-800'>Event Places</h1>
         <button
-          onClick={() => navigate('/event')}
+          onClick={() => navigate('/events/create')}
           className='px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700'
         >
           Go to Event Page

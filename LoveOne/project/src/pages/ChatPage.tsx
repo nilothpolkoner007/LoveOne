@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Send, Image as ImageIcon, Smile } from 'lucide-react';
+import { Send, Image as ImageIcon, Smile, Menu } from 'lucide-react';
 import io from 'socket.io-client';
 
 const socket = io(import.meta.env.VITE_Backend_url);
@@ -22,29 +22,27 @@ interface Connection {
   partner: Partner;
 }
 
-function ChatPage() {
+export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
   const [connections, setConnections] = useState<Connection[]>([]);
   const [currentPartner, setCurrentPartner] = useState<Connection | null>(null);
   const [newMessage, setNewMessage] = useState('');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const token = localStorage.getItem('token');
 
-  // 🧠 Load userId once
   useEffect(() => {
     const id = localStorage.getItem('userId');
-    if (!id) return console.warn('❌ userId not found');
+    if (!id) return console.warn('userId not found');
     setUserId(id);
   }, []);
 
-  // 🔌 Setup socket
   useEffect(() => {
     if (!userId) return;
 
     const register = () => {
       socket.emit('register_user', { userId });
-      console.log('✅ Registered user:', userId);
     };
 
     socket.on('connect', register);
@@ -60,51 +58,43 @@ function ChatPage() {
     };
   }, [userId]);
 
-  // 👥 Fetch connections
   useEffect(() => {
     if (!token) return;
 
-    const fetchConnections = async () => {
+    (async () => {
       try {
-        const res = await fetch( `${import.meta.env.VITE_Backend_url}/user/connections`, {
+        const res = await fetch(`${import.meta.env.VITE_Backend_url}/user/connections`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-
         const data = await res.json();
-        if (!Array.isArray(data) || !data.length) return;
-
-        setConnections(data);
-        setCurrentPartner(data[0]);
+        if (Array.isArray(data) && data.length) {
+          setConnections(data);
+          setCurrentPartner(data[0]);
+        }
       } catch (err) {
-        console.error('❌ Failed to fetch connections:', err);
+        console.error('Failed to fetch connections:', err);
       }
-    };
-
-    fetchConnections();
+    })();
   }, [token]);
 
-  // 🛜 Join room + load messages
   useEffect(() => {
     if (!currentPartner?.roomId || !userId) return;
 
-    const joinRoom = async () => {
+    (async () => {
       socket.emit('join_chat', { userId, roomId: currentPartner.roomId });
-
       try {
-        const res = await fetch(`${import.meta.env.VITE_Backend_url}/chat/${currentPartner.roomId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const res = await fetch(
+          `${import.meta.env.VITE_Backend_url}/chat/${currentPartner.roomId}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
         const data = await res.json();
         setMessages(data);
       } catch (err) {
-        console.error('❌ Failed to load messages:', err);
+        console.error('Failed to load messages:', err);
       }
-    };
-
-    joinRoom();
+    })();
   }, [currentPartner, userId]);
 
-  // 🖼 Handle image upload
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !userId || !currentPartner?.roomId) return;
@@ -112,52 +102,52 @@ function ChatPage() {
     const formData = new FormData();
     formData.append('file', file);
 
-    const res = await fetch(`${import.meta.env.VITE_Backend_url}/chat/upload`, {
-      method: 'POST',
-      body: formData,
-    });
-
-    const data = await res.json();
-
-    const msg: Message = {
-      content: '',
-      imageUrl: data.imageUrl,
-      sender_id: userId,
-      created_at: new Date().toISOString(),
-    };
-
-    socket.emit('send_message', { roomId: currentPartner.roomId, message: msg });
-    setMessages((prev) => [...prev, msg]);
-  };
-
-  // 🗑 Delete a message
-  const handleDeleteMessage = async (msg: Message) => {
-    if (!currentPartner || !userId) return;
-    const confirmed = window.confirm('Delete this message?');
-    if (!confirmed) return;
-
-    const res = await fetch(`${import.meta.env.VITE_Backend_url}/chat/message`, {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        roomId: currentPartner.roomId,
+    try {
+      const res = await fetch(`${import.meta.env.VITE_Backend_url}/chat/upload`, {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      const msg: Message = {
+        content: '',
+        imageUrl: data.imageUrl,
         sender_id: userId,
-        created_at: msg.created_at,
-      }),
-    });
-
-    const result = await res.json();
-    if (result.success) {
-      setMessages((prev) => prev.filter((m) => m.created_at !== msg.created_at));
+        created_at: new Date().toISOString(),
+      };
+      socket.emit('send_message', { roomId: currentPartner.roomId, message: msg });
+      setMessages((prev) => [...prev, msg]);
+    } catch (err) {
+      console.error('Image upload failed:', err);
     }
   };
 
-  // 🧾 Auto scroll
+  const handleDeleteMessage = async (msg: Message) => {
+    if (!currentPartner || !userId) return;
+    if (!window.confirm('Delete this message?')) return;
+
+    try {
+      const res = await fetch(`${import.meta.env.VITE_Backend_url}/chat/message`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          roomId: currentPartner.roomId,
+          sender_id: userId,
+          created_at: msg.created_at,
+        }),
+      });
+      const result = await res.json();
+      if (result.success) {
+        setMessages((prev) => prev.filter((m) => m.created_at !== msg.created_at));
+      }
+    } catch (err) {
+      console.error('Delete message failed:', err);
+    }
+  };
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // 💬 Send text message
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim() || !userId || !currentPartner?.roomId) return;
@@ -167,7 +157,6 @@ function ChatPage() {
       sender_id: userId,
       created_at: new Date().toISOString(),
     };
-
     socket.emit('send_message', { roomId: currentPartner.roomId, message: msg });
     setMessages((prev) => [...prev, msg]);
     setNewMessage('');
@@ -178,43 +167,59 @@ function ChatPage() {
   }
 
   return (
-    <div className='h-[calc(100vh-8rem)] flex'>
-      {/* Sidebar */}
-      <div className='w-64 bg-white border-r border-gray-200'>
-        <div className='p-4'>
-          <h2 className='text-lg font-semibold text-gray-800 mb-4'>Partners</h2>
-          <div className='space-y-2'>
-            {connections.map((conn) => (
-              <button
-                key={conn.partner._id}
-                onClick={() => setCurrentPartner(conn)}
-                className={`flex items-center space-x-2 w-full p-2 rounded-lg ${
-                  currentPartner?.partner._id === conn.partner._id
-                    ? 'bg-rose-100'
-                    : 'hover:bg-gray-100'
-                }`}
-              >
-                <img
-                  src={
-                    conn.partner.avatar_url ||
-                    `https://ui-avatars.com/api/?name=${conn.partner.name}`
-                  }
-                  alt={conn.partner.name}
-                  className='w-10 h-10 rounded-full'
-                />
-                <span className='font-medium'>{conn.partner.name}</span>
-              </button>
-            ))}
-          </div>
-        </div>
+    <div className='h-screen flex flex-col sm:flex-row min-h-screen min-w-full'>
+      {/* Mobile Header */}
+      <div className='sm:hidden flex justify-between items-center p-4 border-b bg-white'>
+        <h2 className='text-lg font-bold'>Chat</h2>
+        <button onClick={() => setSidebarOpen(!sidebarOpen)}>
+          <Menu className='h-6 w-6' />
+        </button>
       </div>
 
+      {/* Sidebar */}
+      <aside
+        className={`${
+          sidebarOpen ? 'block' : 'hidden'
+        } sm:block w-full sm:w-64 bg-white border-r border-gray-200 absolute sm:relative z-20 h-full`}
+      >
+        <nav className='p-4 h-full overflow-y-auto'>
+          <h2 className='text-lg font-semibold text-gray-800 mb-4'>Partners</h2>
+          <ul className='space-y-2'>
+            {connections.map((conn) => (
+              <li key={conn.partner._id}>
+                <button
+                  onClick={() => {
+                    setCurrentPartner(conn);
+                    setSidebarOpen(false);
+                  }}
+                  className={`flex items-center space-x-2 w-full p-2 rounded-lg text-left ${
+                    currentPartner?.partner._id === conn.partner._id
+                      ? 'bg-rose-100'
+                      : 'hover:bg-gray-100'
+                  }`}
+                >
+                  <img
+                    src={
+                      conn.partner.avatar_url ||
+                      `https://ui-avatars.com/api/?name=${conn.partner.name}`
+                    }
+                    alt={conn.partner.name}
+                    className='w-10 h-10 rounded-full'
+                  />
+                  <span className='font-medium'>{conn.partner.name}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      </aside>
+
       {/* Chat Window */}
-      <div className='flex-1 flex flex-col bg-white'>
+      <div className='flex-1 flex flex-col bg-white min-h-0'>
         {currentPartner ? (
           <>
             {/* Header */}
-            <div className='p-4 border-b border-gray-200 flex items-center space-x-4'>
+            <header className='p-4 border-b border-gray-200 flex items-center space-x-4 shrink-0'>
               <img
                 src={
                   currentPartner.partner.avatar_url ||
@@ -227,10 +232,10 @@ function ChatPage() {
                 <h2 className='font-semibold text-gray-800'>{currentPartner.partner.name}</h2>
                 <p className='text-sm text-gray-500'>Online</p>
               </div>
-            </div>
+            </header>
 
             {/* Messages */}
-            <div className='flex-1 overflow-y-auto p-4 space-y-4'>
+            <main className='flex-1 overflow-y-auto p-4 space-y-4 min-h-0'>
               {messages.map((msg, i) => (
                 <div
                   key={i}
@@ -252,8 +257,6 @@ function ChatPage() {
                         {new Date(msg.created_at).toLocaleTimeString()}
                       </p>
                     </div>
-
-                    {/* Delete Button */}
                     {msg.sender_id === userId && (
                       <button
                         onClick={() => handleDeleteMessage(msg)}
@@ -266,36 +269,38 @@ function ChatPage() {
                 </div>
               ))}
               <div ref={messagesEndRef} />
-            </div>
+            </main>
 
-            {/* Message Input */}
-            <form onSubmit={handleSendMessage} className='p-4 border-t border-gray-200'>
-              <div className='flex items-center space-x-4'>
-                <input
-                  type='file'
-                  accept='image/*'
-                  onChange={handleImageUpload}
-                  className='hidden'
-                  id='imageInput'
-                />
-                <label htmlFor='imageInput' className='p-2 text-gray-500 cursor-pointer'>
-                  <ImageIcon className='h-6 w-6' />
-                </label>
-                <button type='button' className='p-2 text-gray-500'>
-                  <Smile className='h-6 w-6' />
-                </button>
-                <input
-                  type='text'
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder='Type a message...'
-                  className='flex-1 p-3 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-rose-500'
-                />
-                <button type='submit' className='p-3 bg-rose-500 text-white rounded-full'>
-                  <Send className='h-5 w-5' />
-                </button>
-              </div>
-            </form>
+            {/* Input */}
+            <div className=''>
+              <form onSubmit={handleSendMessage} className='p-4 border-t border-gray-200 shrink-0'>
+                <div className='flex items-center space-x-4'>
+                  <input
+                    type='file'
+                    accept='image/*'
+                    onChange={handleImageUpload}
+                    className='hidden'
+                    id='imageInput'
+                  />
+                  <label htmlFor='imageInput' className='p-2 text-gray-500 cursor-pointer'>
+                    <ImageIcon className='h-6 w-6' />
+                  </label>
+                  <button type='button' className='p-2 text-gray-500'>
+                    <Smile className='h-6 w-6' />
+                  </button>
+                  <input
+                    type='text'
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    placeholder='Type a message...'
+                    className='flex-1 p-3 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-rose-500'
+                  />
+                  <button type='submit' className='p-3 bg-rose-500 text-white rounded-full'>
+                    <Send className='h-5 w-5' />
+                  </button>
+                </div>
+              </form>
+            </div>
           </>
         ) : (
           <div className='flex-1 flex items-center justify-center text-gray-500'>
@@ -306,5 +311,3 @@ function ChatPage() {
     </div>
   );
 }
-
-export default ChatPage;

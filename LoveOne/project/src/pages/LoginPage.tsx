@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Heart, Mail, Lock, ArrowRight, User, UsersIcon } from 'lucide-react';
 import {  useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import DocumentVerifier from './DocumentVerifier';
 
 const LoginPage = ({ setUser }: { setUser: (user: any) => void }) => {
   const [isLogin, setIsLogin] = useState(true);
@@ -9,6 +10,7 @@ const LoginPage = ({ setUser }: { setUser: (user: any) => void }) => {
   const [password, setPassword] = useState('');
   const [birthday, setBirthday] = useState('');
   const [gender, setGender] = useState('');
+  const [aadhar, setAadhar] = useState('');
   const [name, setName] = useState('');
  const [message, setMessage] = useState('');
  const [messageType, setMessageType] = useState<'success' | 'error' | ''>('');
@@ -21,7 +23,9 @@ const LoginPage = ({ setUser }: { setUser: (user: any) => void }) => {
    try {
      const url = isLogin ? `${import.meta.env.VITE_Backend_url}/user/login` : `${import.meta.env.VITE_Backend_url}/user/register`;
 
-     const payload = isLogin ? { email, password } : { name, email,birthday,gender, password };
+     const payload = isLogin
+       ? { email, password }
+       : { name, email, birthday, aadhar, gender, password };
 
      const { data } = await axios.post(url, payload);
      console.log('Success:', data);
@@ -129,7 +133,19 @@ const LoginPage = ({ setUser }: { setUser: (user: any) => void }) => {
                         </select>
                       </div>
                     </div>
+                    <Input
+                    label='Adhar Card Number'
+                    type='number'
+                    placeholder='1234 1234 1234'
+                    value={aadhar}
+                    onChange={(e) => setAadhar(e.target.value)}
+                    icon={<User className='h-5 w-5 text-gray-400' />}
+                  />
                   </div>
+                  <button>
+                    
+                    <label className='block text-sm font-medium flex items-center text-gray-700 mb-2'>Get varified</label>
+                  </button>
                 </>
               )}
               <Input

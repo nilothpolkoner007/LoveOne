@@ -4,10 +4,10 @@ import axios from 'axios';
 import MemoriesSection from './partner/MemoriesSection';
 
 function ProfilePage() {
-  const [profile, setProfile] = useState<any>(null);
+  const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [coupleId, setCoupleId] = useState<string | null>(null);
+  const [coupleId, setCoupleId] = useState(null);
   const [showMemories, setShowMemories] = useState(false);
   const currentUserId = localStorage.getItem('userId');
 
@@ -18,8 +18,8 @@ function ProfilePage() {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      const normalize = (v: any) =>
-        Array.isArray(v) ? v : typeof v === 'string' ? v.split(',') : [];
+      const normalize = (v) =>
+        Array.isArray(v) ? v : typeof v === 'string' ? v.split(',').map((s) => s.trim()) : [];
 
       ['partner1', 'partner2'].forEach((key) => {
         data[key].interests = normalize(data[key].interests);
@@ -27,7 +27,7 @@ function ProfilePage() {
         data[key].giftPreferences = normalize(data[key].giftPreferences);
       });
 
-      data.milestones = (data.milestones || []).map((m: any) => ({
+      data.milestones = (data.milestones || []).map((m) => ({
         ...m,
         date: new Date(m.date),
       }));
@@ -35,7 +35,7 @@ function ProfilePage() {
       setProfile(data);
       setCoupleId(data.coupleId);
       localStorage.setItem('coupleId', data.coupleId);
-    } catch (err: any) {
+    } catch (err) {
       setError(err.response?.data?.message || 'Failed to load profile');
     } finally {
       setLoading(false);
@@ -68,7 +68,7 @@ function ProfilePage() {
     }
   };
 
-  const handleProfileUpload = async (file: File, partnerKey: 'partner1' | 'partner2') => {
+  const handleProfileUpload = async (file, partnerKey) => {
     const formData = new FormData();
     formData.append('file', file);
 
@@ -88,7 +88,7 @@ function ProfilePage() {
       }),
     });
 
-    setProfile((prev: any) => ({
+    setProfile((prev) => ({
       ...prev,
       [partnerKey]: {
         ...prev[partnerKey],
@@ -97,11 +97,10 @@ function ProfilePage() {
     }));
   };
 
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div className='text-red-500'>{error}</div>;
+  if (loading) return <div className='p-4'>Loading...</div>;
+  if (error) return <div className='p-4 text-red-500'>{error}</div>;
 
   const isPartner1 = profile.partner1._id === currentUserId;
-  const isPartner2 = profile.partner2._id === currentUserId;
   const self = isPartner1 ? profile.partner1 : profile.partner2;
   const partner = isPartner1 ? profile.partner2 : profile.partner1;
   const relationshipDuration = Math.floor(
@@ -110,8 +109,8 @@ function ProfilePage() {
   const partnerBirthday = new Date(partner.dateOfBirth).toLocaleDateString();
 
   return (
-    <div className='space-y-8'>
-      <div className='grid md:grid-cols-2 gap-6'>
+    <div className='space-y-8 px-4 sm:px-6 lg:px-8'>
+      <div className='grid gap-6 sm:grid-cols-1 md:grid-cols-2'>
         <ProfileCard
           profile={profile.partner1}
           partnerKey='partner1'
@@ -122,16 +121,18 @@ function ProfilePage() {
           profile={profile.partner2}
           partnerKey='partner2'
           onUpload={handleProfileUpload}
-          canEdit={isPartner2}
+          canEdit={!isPartner1}
         />
       </div>
 
-      <div className='bg-white rounded-2xl shadow-lg p-8'>
-        <div className='flex justify-between items-center mb-6'>
-          <h2 className='text-2xl font-bold text-gray-800'>Our Story</h2>
-          <div className='flex items-center gap-2 text-rose-500'>
-            <Heart className='h-6 w-6' fill='currentColor' />
-            <span className='font-semibold'>{relationshipDuration} years together</span>
+      <div className='bg-white rounded-2xl shadow-lg p-6'>
+        <div className='flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4'>
+          <h2 className='text-xl sm:text-2xl font-bold text-gray-800'>Our Story</h2>
+          <div className='flex items-center gap-2 text-rose-500 mt-2 sm:mt-0'>
+            <Heart className='h-5 w-5 sm:h-6 sm:w-6' fill='currentColor' />
+            <span className='font-semibold text-sm sm:text-base'>
+              {relationshipDuration} years together
+            </span>
           </div>
         </div>
 
@@ -139,14 +140,14 @@ function ProfilePage() {
           Partner’s Birthday: <span className='font-medium'>{partnerBirthday}</span>
         </p>
 
-        {profile.milestones?.map((m: any, i: number) => (
-          <div key={i} className='relative flex items-start ml-12 mb-6'>
-            <div className='bg-white rounded-xl shadow-sm p-4 w-full'>
+        {profile.milestones?.map((m, i) => (
+          <div key={i} className='relative mb-6'>
+            <div className='bg-white rounded-xl shadow-sm p-4'>
               {m.image && (
                 <img
                   src={m.image}
                   alt={m.title}
-                  className='w-full h-48 object-cover rounded-lg mb-4'
+                  className='w-full aspect-video object-cover rounded-lg mb-4'
                 />
               )}
               <h3 className='text-lg font-semibold text-gray-800'>{m.title}</h3>
@@ -166,7 +167,7 @@ function ProfilePage() {
         {showMemories && <MemoriesSection coupleId={coupleId} />}
       </div>
 
-      <div className='grid md:grid-cols-3 gap-6'>
+      <div className='grid gap-6 sm:grid-cols-1 md:grid-cols-3'>
         <PreferenceCard
           icon={<Heart />}
           title='Shared Interests'
@@ -186,7 +187,7 @@ function ProfilePage() {
 
       <button
         onClick={handleBreakup}
-        className='mt-6 bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-full shadow'
+        className='mt-6 bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-full shadow w-full sm:w-auto'
       >
         💔 Break Up
       </button>
@@ -194,8 +195,7 @@ function ProfilePage() {
   );
 }
 
-// Image slideshow + upload
-function ProfileCard({ profile, partnerKey, onUpload, canEdit }: any) {
+function ProfileCard({ profile, partnerKey, onUpload, canEdit }) {
   const [imgIndex, setImgIndex] = useState(0);
   const images = profile.img || [];
 
@@ -203,8 +203,8 @@ function ProfileCard({ profile, partnerKey, onUpload, canEdit }: any) {
   const prev = () => setImgIndex((i) => (i - 1 + images.length) % images.length);
 
   return (
-    <div className='bg-white rounded-2xl shadow-lg overflow-hidden'>
-      <div className='relative h-48'>
+    <div className='bg-white rounded-xl shadow-md overflow-hidden w-full'>
+      <div className='relative w-full aspect-[5/4] sm:aspect-video'>
         {images.length > 0 ? (
           <>
             <img src={images[imgIndex]} alt='profile' className='w-full h-full object-cover' />
@@ -212,28 +212,27 @@ function ProfileCard({ profile, partnerKey, onUpload, canEdit }: any) {
               <>
                 <button
                   onClick={prev}
-                  className='absolute left-2 top-1/2 bg-white p-1 rounded-full shadow'
+                  className='absolute left-2 top-1/2 -translate-y-1/2 bg-white p-1 sm:p-2 rounded-full shadow'
                 >
-                  <ChevronLeft />
+                  <ChevronLeft className='w-4 h-4 sm:w-5 sm:h-5' />
                 </button>
                 <button
                   onClick={next}
-                  className='absolute right-2 top-1/2 bg-white p-1 rounded-full shadow'
+                  className='absolute right-2 top-1/2 -translate-y-1/2 bg-white p-1 sm:p-2 rounded-full shadow'
                 >
-                  <ChevronRight />
+                  <ChevronRight className='w-4 h-4 sm:w-5 sm:h-5' />
                 </button>
               </>
             )}
           </>
         ) : (
-          <div className='w-full h-full flex items-center justify-center text-gray-400'>
-            No Image
+          <div className='w-full h-full flex items-center justify-center text-gray-400 text-sm'>
+            No image available
           </div>
         )}
-
         {canEdit && (
-          <label className='absolute bottom-4 right-4 bg-white p-2 rounded-full shadow cursor-pointer'>
-            <Camera />
+          <label className='absolute bottom-3 right-3 bg-white p-1.5 sm:p-2 rounded-full shadow cursor-pointer'>
+            <Camera className='w-4 h-4 sm:w-5 sm:h-5' />
             <input
               type='file'
               accept='image/*'
@@ -246,23 +245,15 @@ function ProfileCard({ profile, partnerKey, onUpload, canEdit }: any) {
           </label>
         )}
       </div>
-      <div className='p-4'>
-        <h2 className='text-xl font-bold text-gray-800'>{profile.name}</h2>
-        <p className='text-gray-600'>{profile.location}</p>
+      <div className='p-3'>
+        <h2 className='text-base sm:text-lg font-bold text-gray-800'>{profile.name}</h2>
+        <p className='text-sm text-gray-600'>{profile.location}</p>
       </div>
     </div>
   );
 }
 
-function PreferenceCard({
-  icon,
-  title,
-  items,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  items: string[];
-}) {
+function PreferenceCard({ icon, title, items }) {
   return (
     <div className='bg-white rounded-xl shadow p-6'>
       <div className='flex items-center space-x-3 mb-4'>

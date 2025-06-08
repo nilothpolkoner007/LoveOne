@@ -31,7 +31,7 @@ function App() {
       <Route path="/profile" element={<Layout><ProfilePage /></Layout>} />
       <Route path="/settings" element={<Layout><SettingsPage /></Layout>} />
       <Route path="/connect" element={<Layout><ConnectPage /></Layout>} />
-      <Route path="/event" element={<Layout><CreateEventsPage /></Layout>} />
+      <Route path="/events/create" element={<Layout><CreateEventsPage /></Layout>} />
       <Route path="/connect/:inviteId" element={<Layout><ConnectPage /></Layout>} />
         <Route path="/events/create/:eventPlaceId" element={<CreateEventsPage />} />
 
